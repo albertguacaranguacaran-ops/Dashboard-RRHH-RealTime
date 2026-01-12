@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard RRHH - Leidy Cordero</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary: #1e293b;
+            --accent: #2563eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #334155;
+            --text-light: #64748b;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-main);
+        }
+
+        /* --- HEADER --- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.6rem;
+            color: var(--primary);
+            font-weight: 700;
+            text-transform: uppercase; /* Para que se vea más ejecutivo */
+        }
+        .status-badge {
+            background-color: #e2e8f0;
+            color: var(--text-main);
+            padding: 6px 15px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* --- TARJETAS SUPERIORES (KPIs) --- */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Ajustado para que quepan 5 */
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-top: 4px solid transparent;
+            transition: transform 0.2s;
+        }
+        .card:hover { transform: translateY(-3px); }
+        .card h3 { margin: 0; font-size: 0.8rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .card .number { font-size: 2.2rem; font-weight: 700; color: var(--primary); margin-top: 5px; }
+        
+        .card.activos { border-color: var(--success); }
+        .card.fijos { border-color: var(--accent); }
+        .card.contratados { border-color: var(--warning); }
+        .card.cesantes { border-color: var(--text-light); }
+        
+        /* ESTILO NUEVO PARA TARJETA DE ALERTA */
+        .card.evaluaciones { 
+            border-color: var(--danger); 
+            background-color: #fef2f2; /* Fondo rojo muy suave */
+        }
+        .card.evaluaciones .number { color: var(--danger); }
+        .card.evaluaciones h3 { color: #b91c1c; }
+
+        /* --- SECCIÓN MEDIA (GRÁFICO Y INGRESOS) --- */
+        .mid-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; 
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        @media (max-width: 900px) {
+            .mid-grid { grid-template-columns: 1fr; } 
+        }
+
+        .container-box {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* TABLA DE INGRESOS (Simple) */
+        .ingresos-list .item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .ingresos-list .item:last-child { border-bottom: none; }
+        .ingresos-list .name { font-weight: 600; color: var(--text-main); font-size: 0.9rem; }
+        .ingresos-list .meta { font-size: 0.8rem; color: var(--text-light); }
+        .badge-new { background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+
+        /* --- SECCIÓN INFERIOR (TABLA ALERTAS) --- */
+        .full-width {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        /* ESTILOS DE TABLA PROFESIONAL */
+        .table-wrapper {
+            max-height: 400px; /* ALTURA FIJA CON SCROLL */
+            overflow-y: auto;  /* Scroll vertical */
+            overflow-x: auto;  /* Scroll horizontal en móvil */
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            min-width: 600px; /* Asegura que no se aplaste en móvil */
+        }
+
+        thead th {
+            background-color: #f8fafc;
+            color: var(--text-light);
+            font-weight: 600;
+            text-align: left;
+            padding: 15px;
+            position: sticky; /* CABECERA FIJA */
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
+        }
+
+        tbody td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+
+        tbody tr:hover { background-color: #f8fafc; }
+
+        /* Celdas específicas */
+        .col-nombre { font-weight: 600; color: var(--primary); }
+        .col-empresa { color: var(--text-light); font-size: 0.85rem; display: flex; align-items: center; gap: 5px; }
+        .col-cargo { color: #475569; font-size: 0.85rem; font-style: italic; }
+        
+        /* Badges de Días */
+        .badge-dias {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            min-width: 80px;
+            text-align: center;
+        }
+        .urgent { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; } /* Rojo */
+        .warning { background-color: #fef3c7; color: #b45309; border: 1px solid #fcd34d; } /* Amarillo */
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1><i class="fas fa-chart-line"></i> Dashboard Gerencial Leidy Cordero</h1>
+        <div class="status-badge" id="last-update">
+            <i class="fas fa-circle-notch fa-spin"></i> Conectando...
+        </div>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="card evaluaciones">
+            <h3><i class="fas fa-bell"></i> Por Evaluar (15 Días)</h3>
+            <div class="number" id="num-alertas">--</div>
+        </div>
+        
+        <div class="card activos">
+            <h3>Activos</h3>
+            <div class="number" id="num-activos">--</div>
+        </div>
+        <div class="card fijos">
+            <h3>Fijos</h3>
+            <div class="number" id="num-fijos">--</div>
+        </div>
+        <div class="card contratados">
+            <h3>Contratados</h3>
+            <div class="number" id="num-contratados">--</div>
+        </div>
+        <div class="card cesantes">
+            <h3>Cesantes</h3>
+            <div class="number" id="num-cesantes">--</div>
+        </div>
+    </div>
+
+    <div class="mid-grid">
+        <div class="container-box">
+            <div class="section-title"><i class="fas fa-chart-pie"></i> Distribución por Empresa</div>
+            <div style="height: 250px; position: relative;">
+                <canvas id="myChart"></canvas>
+            </div>
+        </div>
+
+        <div class="container-box">
+            <div class="section-title" style="color: var(--success);"><i class="fas fa-user-plus"></i> Ingresos Recientes (3 Meses)</div>
+            <div id="ingresos-list" class="ingresos-list">
+                <p style="color:#94a3b8; font-style:italic;">Cargando...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="full-width">
+        <div class="section-title" style="color: var(--danger); justify-content: space-between;">
+            <span><i class="fas fa-exclamation-triangle"></i> Control de Evaluaciones Pendientes</span>
+            <span style="font-size: 0.8rem; background: #fee2e2; padding: 2px 8px; border-radius: 4px; color: #b91c1c;">Prioridad Alta</span>
+        </div>
+        
+        <div class="table-wrapper">
+            <table id="alertas-table">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Candidato a Evaluación</th>
+                        <th style="width: 35%;">Responsable de Evaluar (Dpto / Gerente)</th>
+                        <th style="width: 20%;">Cargo Actual</th>
+                        <th style="width: 20%; text-align: center;">Tiempo Restante</th>
+                    </tr>
+                </thead>
+                <tbody id="alertas-body">
+                    <tr><td colspan="4" style="text-align:center; padding: 30px; color: #94a3b8;">Esperando datos de Excel...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="/__/firebase/9.6.1/firebase-app-compat.js"></script>
+    <script src="/__/firebase/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="/__/firebase/init.js"></script>
+
+    <script>
+        const db = firebase.firestore();
+        let myChart = null;
+
+        // Escuchar datos en tiempo real
+        db.collection("dashboards").doc("global_metrics").onSnapshot((doc) => {
+            if (doc.exists) {
+                updateDashboard(doc.data());
+            }
+        });
+
+        function updateDashboard(data) {
+            // Actualizar Fecha
+            const now = new Date();
+            document.getElementById('last-update').innerHTML = 
+                '<i class="fas fa-check" style="color:green;"></i> Actualizado: ' + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            // KPIs
+            const kpi = data.kpi_general || {};
+            document.getElementById('num-activos').innerText = kpi.activos || 0;
+            document.getElementById('num-fijos').innerText = kpi.fijos || 0;
+            document.getElementById('num-contratados').innerText = kpi.contratados || 0;
+            document.getElementById('num-cesantes').innerText = kpi.cesantes || 0;
+
+            // --- NUEVO: CONTEO TARJETA ROJA ---
+            const listaAlertas = data.alertas_vencimiento || [];
+            document.getElementById('num-alertas').innerText = listaAlertas.length;
+
+            // Gráfico
+            updateChart(data.kpi_origen || []);
+
+            // Listas
+            renderIngresos(data.ultimos_ingresos || []);
+            renderAlertasTable(listaAlertas);
+        }
+
+        // --- RENDERIZAR NUEVOS INGRESOS ---
+        function renderIngresos(lista) {
+            const container = document.getElementById('ingresos-list');
+            container.innerHTML = "";
+
+            if (!lista || lista.length === 0) {
+                container.innerHTML = '<div style="padding:10px; color:#94a3b8;">No hay ingresos recientes.</div>';
+                return;
+            }
+
+            lista.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerHTML = `
+                    <div>
+                        <div class="name">${item.nombre}</div>
+                        <div class="meta"><i class="fas fa-briefcase"></i> ${item.cargo}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span class="badge-new">NUEVO</span>
+                        <div class="meta" style="margin-top:2px;">${item.fecha}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // --- TABLA DE CONTROL DE AUDITORÍA (RRHH) ---
+        function renderAlertasTable(lista) {
+            const tbody = document.getElementById('alertas-body');
+            tbody.innerHTML = "";
+
+            if (!lista || lista.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px; color:#10b981;"><i class="fas fa-clipboard-check" style="font-size:1.5rem; margin-bottom:10px; display:block;"></i>Todo al día. No hay evaluaciones pendientes.</td></tr>';
+                return;
+            }
+
+            // Ordenar: Los que tienen MENOS días van primero (Urgentes)
+            lista.sort((a, b) => a.dias - b.dias);
+
+            lista.forEach(item => {
+                const tr = document.createElement('tr');
+                
+                // Barra de Urgencia
+                let porcentaje = 100 - (item.dias * 6.6); // 15 días * 6.6 ≈ 100%
+                if (porcentaje < 0) porcentaje = 5; if (porcentaje > 100) porcentaje = 100;
+                
+                // Color rojo si faltan 5 días o menos
+                const colorBarra = item.dias <= 5 ? '#ef4444' : '#f59e0b'; 
+
+                tr.innerHTML = `
+                    <td class="col-nombre">
+                        ${item.nombre}
+                    </td>
+                    <td>
+                        <div style="font-weight:700; color:#1e293b; font-size:0.9rem;">
+                            <i class="fas fa-building" style="color:#64748b;"></i> ${item.departamento || 'Sin Depto'}
+                        </div>
+                        <div style="font-size:0.85rem; color:#475569; margin-top:4px; display:flex; align-items:center; gap:5px;">
+                            <span style="background:#f1f5f9; padding:2px 6px; border-radius:4px;">
+                                <i class="fas fa-user-check" style="color:#2563eb;"></i> Evalúa:
+                            </span> 
+                            <strong>${item.gerente || 'No asignado'}</strong>
+                        </div>
+                    </td>
+                    <td class="col-cargo">${item.cargo || 'Sin cargo'}</td>
+                    <td style="padding: 10px 20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                            <span style="font-weight:bold; color:${colorBarra}; font-size:0.9rem;">
+                                ${item.dias} Días
+                            </span>
+                            <span style="font-size:0.75rem; color:#94a3b8;">Vence: ${item.fecha}</span>
+                        </div>
+                        <div style="width:100%; height:6px; background:#e2e8f0; border-radius:3px; overflow:hidden;">
+                            <div style="width:${porcentaje}%; height:100%; background:${colorBarra}; transition: width 1s ease;"></div>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- GRÁFICO DONA ---
+        function updateChart(origenData) {
+            const labels = origenData.map(d => d.empresa);
+            const values = origenData.map(d => d.cantidad);
+
+            if (myChart) myChart.destroy();
+
+            const ctx = document.getElementById('myChart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#6366f1'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
+                    },
+                    layout: { padding: 10 }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
